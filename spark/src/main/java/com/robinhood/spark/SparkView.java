@@ -121,8 +121,8 @@ public class SparkView extends View implements ScrubGestureDetector.ScrubListene
     private @Nullable Animator pathAnimator;
     private final RectF contentRect = new RectF();
 
-    private List<Float> xPoints;
-    private List<Float> yPoints;
+    private ArrayList<Float> xPoints;
+    private ArrayList<Float> yPoints;
 
     public SparkView(Context context) {
         super(context);
@@ -221,6 +221,10 @@ public class SparkView extends View implements ScrubGestureDetector.ScrubListene
         super.onSizeChanged(w, h, oldW, oldH);
         updateContentRect();
         populatePath();
+    }
+
+    public void setMoveListener(ScrubGestureDetector.MoveListener moveListener) {
+        scrubGestureDetector.setMoveListener(moveListener);
     }
 
     /**
@@ -359,11 +363,14 @@ public class SparkView extends View implements ScrubGestureDetector.ScrubListene
         invalidate();
     }
 
-    private void setScrubLine(float x) {
+    private void setScrubLine(float x, float y) {
         x = resolveBoundedScrubLine(x);
         scrubLinePath.reset();
         scrubLinePath.moveTo(x, getPaddingTop());
         scrubLinePath.lineTo(x, getHeight() - getPaddingBottom());
+        scrubLinePath.moveTo(getPaddingStart(), y);
+        scrubLinePath.lineTo(getWidth() - getPaddingEnd(), y);
+        scrubLinePath.addCircle(x, y, 10, Path.Direction.CCW);
         invalidate();
     }
 
@@ -903,15 +910,15 @@ public class SparkView extends View implements ScrubGestureDetector.ScrubListene
     @Override
     public void onScrubbed(float x, float y) {
         if (adapter == null || adapter.getCount() == 0) return;
+        int index = getNearestIndex(xPoints, x);
         if (scrubListener != null) {
             getParent().requestDisallowInterceptTouchEvent(true);
-            int index = getNearestIndex(xPoints, x);
             if (scrubListener != null) {
                 scrubListener.onScrubbed(adapter.getItem(index));
             }
         }
 
-        setScrubLine(x);
+        setScrubLine(x, yPoints.get(index));
     }
 
     @Override

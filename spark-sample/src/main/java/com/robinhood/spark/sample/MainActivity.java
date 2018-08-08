@@ -1,12 +1,12 @@
 /**
  * Copyright (C) 2016 Robinhood Markets, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,6 +28,7 @@ import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.robinhood.spark.ScrubGestureDetector;
 import com.robinhood.spark.SparkAdapter;
 import com.robinhood.spark.SparkView;
 import com.robinhood.spark.animation.LineSparkAnimator;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
         adapter = new RandomizedAdapter();
         sparkView.setAdapter(adapter);
+        sparkView.setMoveListener(adapter);
         sparkView.setScrubListener(new SparkView.OnScrubListener() {
             @Override
             public void onScrubbed(Object value) {
@@ -68,17 +70,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ((CheckBox)findViewById(R.id.fillCheckBox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        ((CheckBox) findViewById(R.id.fillCheckBox)).setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-            {
-                if ( isChecked )
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked)
                     sparkView.setFillType(SparkView.FillType.DOWN);
                 else
                     sparkView.setFillType(SparkView.FillType.NONE);
             }
         });
-        
+
         scrubInfoTextView = findViewById(R.id.scrub_info_textview);
 
         // set select
@@ -88,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
 
-                switch(position) {
+                switch (position) {
                     case 1:
                         LineSparkAnimator lineSparkAnimator = new LineSparkAnimator();
                         lineSparkAnimator.setDuration(2500L);
@@ -123,13 +124,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public static class RandomizedAdapter extends SparkAdapter {
+    public static class RandomizedAdapter extends SparkAdapter implements ScrubGestureDetector.MoveListener {
         private final float[] yData;
+        private int start;
+        private final int count;
         private final Random random;
 
         public RandomizedAdapter() {
             random = new Random();
-            yData = new float[50];
+            start = 0;
+            count = 100;
+            yData = new float[count * 10];
             randomize();
         }
 
@@ -142,18 +147,26 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return yData.length;
+            return count;
         }
 
         @NonNull
         @Override
         public Object getItem(int index) {
-            return yData[index];
+            return yData[start + index];
         }
 
         @Override
         public float getY(int index) {
-            return yData[index];
+            return yData[start + index];
+        }
+
+        @Override
+        public void onMove(float xDelta, float yDelta) {
+            start -= xDelta / 5;
+            start = Math.min(Math.max(start, 0), 1000 - count);
+
+            notifyDataSetChanged();
         }
     }
 }
